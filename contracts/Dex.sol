@@ -94,7 +94,7 @@ contract Dex {
         emit WithdrawToken(msg.sender, token, amount, block.timestamp);
     }
 
-    function getTokenBalance(address token) public returns (uint256) {
+    function getTokenBalance(address token) public returns (uint) {
         return balance_token[msg.sender][token];
     }
 }
