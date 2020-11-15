@@ -1,5 +1,24 @@
-<div>DEX</div>
-<div>Your account my lord: {{account}}</div>
-<div>Your account balance my lord: {{balance}} ETH</div>
-<input [(ngModel)]="ethInput"> <button (click)="depositEth()">Deposit ETH my lord</button>
-<div>Deposited: </div> <div> {{depositedEthBalance}} ETH</div>
+<div class="row">DEX</div>
+<div class="row">Your account my lord: {{account}}</div>
+<div class="row">Your account balance my lord: {{balance}} ETH</div>
+<div class="row">
+  <input [(ngModel)]="ethInput_deposit"> <button (click)="depositEth()">Deposit ETH my lord</button>
+</div>
+<div class="row">
+  <div>Deposited: </div>
+  <div> {{depositedEthBalance}} ETH</div>
+</div>
+<div class="row">
+  <input [(ngModel)]="ethInput_withdraw"> <button (click)="withdrawEth()">Withdrow ETH my lord</button>
+</div>
+<div class="row">
+  <div>
+    DAI / ETH
+  </div><button (click)="listToken()">Add DAI to Dex</button><button (click)="getTokenListedInDex()">Check Listing</button>
+</div>
+<div class="row">
+  <input [(ngModel)]="buyLimit_ethInput_amount" placeholder="Amount">
+  <input [(ngModel)]="buyLimit_ethInput_price" placeholder="Price">
+  <button (click)="buyLimit()">Buy limit</button>
+</div>
+<div class="row"><button (click)="getBuyOrderBook()">Get Buy Order Book</button></div>

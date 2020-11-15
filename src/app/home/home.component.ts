@@ -16,8 +16,15 @@ export class HomeComponent implements OnInit {
   account;
   balance;
   depositedEthBalance;
-  ethInput;
+  ethInput_deposit;
+  ethInput_withdraw;
   dexContract;
+
+  DAI_TOKEN_ADDRESS = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
+
+  //buy orders
+  buyLimit_ethInput_amount;
+  buyLimit_ethInput_price: string;
 
   constructor() { }
 
@@ -43,7 +50,7 @@ export class HomeComponent implements OnInit {
     this.networkId = await this.web3.eth.net.getId();
     const accounts = await this.web3.eth.getAccounts();
     this.account = accounts[0];
-    let balance = await this.web3.eth.getBalance(this.account);
+    const balance = await this.web3.eth.getBalance(this.account);
     this.balance = this.web3.utils.fromWei(balance, 'ether');
     this.initAbisContracts();
     this.getEthBalance();
@@ -57,8 +64,24 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  async listToken(){
+    await this.dexContract.methods.addTokenToDex(this.DAI_TOKEN_ADDRESS, "DAI").call({from: this.account}, 
+      (error, result) => {
+        console.log(error)
+        console.log(result)
+      });
+  }
+
+  async getTokenListedInDex(){
+    await this.dexContract.methods.getTokenListedInDex(this.DAI_TOKEN_ADDRESS).call({from: this.account}, 
+      (error, result) => {
+        console.log(error)
+        console.log(result)
+      });
+  }
+
   depositEth() {
-    const ethInputToUint = this.web3.utils.toWei(this.ethInput, 'ether');
+    const ethInputToUint = this.web3.utils.toWei(this.ethInput_deposit, 'ether');
     this.dexContract.methods
       .depositEth()
       .send({ value: ethInputToUint, from: this.account })
@@ -69,13 +92,39 @@ export class HomeComponent implements OnInit {
       });
   }
 
-  // withdraw
+  withdrawEth() {
+    const ethInputToUint = this.web3.utils.toWei(this.ethInput_withdraw, 'ether');
+    this.dexContract.methods
+      .withdrawEth(ethInputToUint)
+      .send({ from: this.account })
+      .on("transactionHash", (hash) => {
+        this.loadBlockChainData();
+        this.getEthBalance();
+      });
+  }
 
   async getEthBalance() {
-    let depositedEthBalance = await this.dexContract.methods.getEthBalance().call({ from: this.account }, (error, result) => {
+    await this.dexContract.methods.getEthBalance().call({ from: this.account }, (error, result) => {
+      console.log(result)
       this.depositedEthBalance = this.web3.utils.fromWei(result, 'ether');
     });
-    // console.log(depositedEthBalance);
+  }
+
+  async buyLimit() {
+    const buyLimitInput = this.web3.utils.toWei(this.buyLimit_ethInput_amount, 'ether');
+    await this.dexContract.methods.buyLimit(this.DAI_TOKEN_ADDRESS,
+      this.buyLimit_ethInput_price,
+      buyLimitInput,
+      this.account).call({ from: this.account }, (error, result) => {
+        console.log(error)
+        console.log(result)
+      });
+  }
+
+  async getBuyOrderBook() {
+    await this.dexContract.methods.getBuyOrdersBook(this.DAI_TOKEN_ADDRESS).call({ from: this.account }, (error, result) => {
+     console.log(result);
+    });
   }
 
 }

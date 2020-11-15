@@ -3,7 +3,7 @@ pragma solidity 0.7.1;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Dex {
-    // Events
+    // Events ----------------------
 
     event DepositEth(address from, uint256 amount, uint256 timestamp);
     event WithdrawEth(address to, uint256 amount, uint256 timestamp);
@@ -19,13 +19,18 @@ contract Dex {
         uint256 amount,
         uint256 timestamp
     );
+    event TokenAddedToSystem(
+        address token,
+        string tokenName,
+        uint256 timestamp
+    );
 
-    // Balances
+    // Balances mappings ----------------------
 
     mapping(address => uint256) balance_eth;
     mapping(address => mapping(address => uint256)) balance_token;
 
-    // Order book
+    // Order book Struct ----------------------
 
     struct Offer {
         uint256 amount;
@@ -42,6 +47,7 @@ contract Dex {
 
     struct Token {
         address token;
+        string tokenName;
         mapping(uint256 => OrderBook) buy_book;
         mapping(uint256 => OrderBook) sell_book;
         uint256 buy_price;
@@ -52,9 +58,28 @@ contract Dex {
         uint256 sell_volume;
     }
 
-    mapping(uint8 => Token) order_book;
+    mapping(address => Token) order_book;
 
-    // Deposit
+    // uint8 order_book_index;
+
+    // Tokens listing functions ----------------------
+
+    function addTokenToDex(address token, string memory tokenName) public {
+        // require(order_book[token].token != address(0));
+        order_book[token].token = token;
+        order_book[token].tokenName = tokenName;
+        emit TokenAddedToSystem(token, tokenName, block.timestamp);
+    }
+
+    // getToken we dont have, becouse to expensive
+    // For testing we get added token by key thais token address
+    function getTokenListedInDex(address token) public view returns (address) {
+        // TODO check not null
+        // TODO just admin can call
+        return order_book[token].token;
+    }
+
+    // Deposit functions ----------------------------
 
     function depositEth() public payable {
         balance_eth[msg.sender] += msg.value;
@@ -94,7 +119,84 @@ contract Dex {
         emit WithdrawToken(msg.sender, token, amount, block.timestamp);
     }
 
-    function getTokenBalance(address token) public returns (uint) {
+    function getTokenBalance(address token) public returns (uint256) {
         return balance_token[msg.sender][token];
+    }
+
+    // Orders funtions --------------------------------
+
+    // Buy limit -------------------
+
+    function buyLimit(
+        address token,
+        uint256 priceInWei,
+        uint256 amount,
+        address maker
+    ) public {
+        // 1. Icrease buy offer length
+        order_book[token].buy_book[priceInWei].offers_length++;
+        // 2. Add buy offer
+        order_book[token].buy_book[priceInWei].offers[order_book[token]
+            .buy_book[priceInWei]
+            .offers_length] = Offer(amount, maker);
+        // 3. If First order
+        if (order_book[token].buy_book[priceInWei].offers_length == 1) {
+            order_book[token].buy_book[priceInWei].offers_key = 1;
+            order_book[token].buy_volume++;
+
+            uint256 currentBuyPrice = order_book[token].buy_price;
+            uint256 lowestBuyPrice = order_book[token].lowest_buy_price;
+
+            if (lowestBuyPrice == 0 || lowestBuyPrice > priceInWei) {
+                // 3.1 First entry
+                if (currentBuyPrice == 0) {
+                    order_book[token].buy_price = priceInWei;
+                    order_book[token].buy_book[priceInWei].max_price = priceInWei;
+                    order_book[token].buy_book[priceInWei].low_price = 0;
+                }
+            }
+        }
+    }
+
+    // Order book functios ---------------------
+
+    function getBuyOrdersBook(address token)
+        public
+        view
+        returns (uint256[] memory, uint256[] memory)
+    {
+        Token storage loadedToken = order_book[token];
+        uint256[] memory buyOrderPrices = new uint256[](loadedToken.buy_volume);
+        uint256[] memory buyOrdersVolume = new uint256[](loadedToken.buy_volume);
+
+        uint256 lowestBuyPrice = loadedToken.lowest_buy_price;
+        uint256 counter = 0;
+
+        if (order_book[token].buy_price > 0) {
+            while (lowestBuyPrice <= order_book[token].buy_price) {
+                buyOrderPrices[counter] = lowestBuyPrice;
+                uint256 priceVolume = 0;
+                uint256 offers_key = loadedToken.buy_book[lowestBuyPrice].offers_key;
+
+                while (
+                    offers_key <= loadedToken.buy_book[lowestBuyPrice].offers_length
+                ) {
+                    priceVolume += loadedToken.buy_book[lowestBuyPrice].offers[offers_key].amount;
+                    offers_key++;
+                }
+
+                buyOrdersVolume[counter] = priceVolume;
+
+                if (
+                    lowestBuyPrice == loadedToken.buy_book[lowestBuyPrice].max_price
+                ) {
+                    break;
+                } else {
+                    lowestBuyPrice = loadedToken.buy_book[lowestBuyPrice].max_price;
+                }
+                counter++;
+            }
+        }
+        return(buyOrderPrices, buyOrdersVolume);
     }
 }
