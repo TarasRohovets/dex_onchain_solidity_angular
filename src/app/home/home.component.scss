@@ -2,3 +2,32 @@
     display: flex;
     flex-direction: row;
 }
+.col {
+    display: flex;
+    flex-direction: column;
+}
+.input-width {
+    max-width: 200px;
+    background-color: lightcyan;
+}
+
+.eth-address {
+    background-color: rgb(156, 84, 223);
+    color: white;
+    border-radius: 5px;
+    padding: 2px;
+}
+
+.eth-balance {
+    background-color: rgb(156, 84, 223);
+    color: white;
+    border-radius: 5px;
+    padding: 2px;
+}
+
+.eth-pair{
+    background-color: rgb(84, 223, 114);
+    color: white;
+    border-radius: 5px;
+    padding: 2px;
+}

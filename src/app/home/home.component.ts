@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import Web3 from 'web3';
 import Dex from "build/contracts/Dex.json";
+import { Pair } from '../models/pair';
 
 declare let window: any;
 
@@ -11,16 +12,19 @@ declare let window: any;
 })
 export class HomeComponent implements OnInit {
 
-  web3;
-  networkId;
-  account;
-  balance;
-  depositedEthBalance;
-  ethInput_deposit;
-  ethInput_withdraw;
-  dexContract;
+  public pairs: Pair[] = [];
+
+  public web3;
+  public networkId;
+  public account;
+  public balance;
+  public depositedEthBalance;
+  public ethInput_deposit;
+  public ethInput_withdraw;
+  public dexContract;
 
   DAI_TOKEN_ADDRESS = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
+  TETHER_TOKEN_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
   //buy orders
   buyLimit_ethInput_amount;
@@ -36,24 +40,26 @@ export class HomeComponent implements OnInit {
     if (window.ethereum) {
       window.web3 = new Web3(window.ethereum);
       await window.ethereum.enable();
-      this.loadBlockChainData();
+      await this.loadBlockChainData();
     } else if (window.web3) {
       window.web3 = new Web3(window.web3.currentProvider);
-      this.loadBlockChainData();
+      await this.loadBlockChainData();
     } else {
       window.alert('No Metamask detected');
     }
   }
 
   async loadBlockChainData() {
+    console.log("loadBlockChainData()")
     this.web3 = window.web3;
     this.networkId = await this.web3.eth.net.getId();
     const accounts = await this.web3.eth.getAccounts();
     this.account = accounts[0];
     const balance = await this.web3.eth.getBalance(this.account);
     this.balance = this.web3.utils.fromWei(balance, 'ether');
-    this.initAbisContracts();
-    this.getEthBalance();
+    await this.initAbisContracts();
+    await this.getEthBalance();
+    await this.getTokenListedInDex();
   }
 
   initAbisContracts() {
@@ -64,31 +70,37 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  async listToken(){
-    await this.dexContract.methods.addTokenToDex(this.DAI_TOKEN_ADDRESS, "DAI").call({from: this.account}, 
-      (error, result) => {
-        console.log(error)
-        console.log(result)
-      });
+  // MOVED to migrations
+  // async listToken() {
+  //   await this.dexContract.methods.addTokenToDex(this.DAI_TOKEN_ADDRESS, "DAI").call({ from: this.account },
+  //     (error, result) => {
+  //       console.log(error)
+  //       console.log(result)
+  //     });
+  // }
+
+  async getTokenListedInDex() {
+    const addresses = [this.DAI_TOKEN_ADDRESS, this.TETHER_TOKEN_ADDRESS];
+    for (let i: number = 0; i < addresses.length; i++) {
+      await this.dexContract.methods.getTokenListedInDex(addresses[i]).call({ from: this.account },
+        (error, result) => {
+          this.pairs.push({ name: result.tokenName, address: result.token } as Pair)
+          console.log(error);
+          console.log(result);
+          console.log(this.pairs);
+        });
+    }
   }
 
-  async getTokenListedInDex(){
-    await this.dexContract.methods.getTokenListedInDex(this.DAI_TOKEN_ADDRESS).call({from: this.account}, 
-      (error, result) => {
-        console.log(error)
-        console.log(result)
-      });
-  }
-
-  depositEth() {
+  async depositEth() {
     const ethInputToUint = this.web3.utils.toWei(this.ethInput_deposit, 'ether');
     this.dexContract.methods
       .depositEth()
       .send({ value: ethInputToUint, from: this.account })
-      .on("transactionHsh", (hash) => {
+      .on("transactionHsh", async (hash) => {
         console.log("depositEth()");
-        this.loadBlockChainData();
-        this.getEthBalance();
+        await this.loadBlockChainData();
+        await this.getEthBalance();
       });
   }
 
@@ -97,16 +109,20 @@ export class HomeComponent implements OnInit {
     this.dexContract.methods
       .withdrawEth(ethInputToUint)
       .send({ from: this.account })
-      .on("transactionHash", (hash) => {
-        this.loadBlockChainData();
-        this.getEthBalance();
+      .on("transactionHash", async (hash) => {
+        await this.loadBlockChainData();
+        await this.getEthBalance();
       });
   }
 
   async getEthBalance() {
     await this.dexContract.methods.getEthBalance().call({ from: this.account }, (error, result) => {
+      console.log(this.account)
+      console.log(error)
       console.log(result)
-      this.depositedEthBalance = this.web3.utils.fromWei(result, 'ether');
+      if (result !== undefined) {
+        this.depositedEthBalance = this.web3.utils.fromWei(result.toString(), 'ether');
+      }
     });
   }
 
@@ -123,7 +139,7 @@ export class HomeComponent implements OnInit {
 
   async getBuyOrderBook() {
     await this.dexContract.methods.getBuyOrdersBook(this.DAI_TOKEN_ADDRESS).call({ from: this.account }, (error, result) => {
-     console.log(result);
+      console.log(result);
     });
   }
 

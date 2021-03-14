@@ -1,24 +1,41 @@
-<div class="row">DEX</div>
-<div class="row">Your account my lord: {{account}}</div>
-<div class="row">Your account balance my lord: {{balance}} ETH</div>
-<div class="row">
-  <input [(ngModel)]="ethInput_deposit"> <button (click)="depositEth()">Deposit ETH my lord</button>
-</div>
-<div class="row">
-  <div>Deposited: </div>
-  <div> {{depositedEthBalance}} ETH</div>
-</div>
-<div class="row">
-  <input [(ngModel)]="ethInput_withdraw"> <button (click)="withdrawEth()">Withdrow ETH my lord</button>
-</div>
-<div class="row">
+<div class="container">
+  <div class="row mt-2 mb-2">Your account my lord: <div class="eth-address">{{account}}</div>
+  </div>
+  <div class="row mt-2 mb-2">Your account balance my lord: <div class="eth-balance">{{balance}} ETH</div>
+  </div>
+  <div class="row mt-2 mb-2">
+    <input type="text" class="form-control input-width mr-2" [(ngModel)]="ethInput_deposit">
+    <button type="button" class="btn btn-dark" (click)="depositEth()">Deposit ETH my lord</button>
+  </div>
+  <div class="row mt-2 mb-2">
+    <div>Deposited: </div>
+    <div>
+      <div class="eth-balance">{{depositedEthBalance}} ETH</div>
+    </div>
+  </div>
+  <div class="row mt-2 mb-2">
+    <input class="form-control input-width mr-2" [(ngModel)]="ethInput_withdraw">
+    <button type="button" class="btn btn-dark" (click)="withdrawEth()">Withdrow ETH my lord</button>
+  </div>
+
+  <div class="row mt-2 mb-2">
+    Available Pairs:
+  </div>
+  <!-- <button type="button" class="btn btn-dark" (click)="listToken()">Add DAI to Dex</button> -->
+  <!-- <button type="button" class="btn btn-dark" (click)="getTokenListedInDex()">Check Listing</button> -->
   <div>
-    DAI / ETH
-  </div><button (click)="listToken()">Add DAI to Dex</button><button (click)="getTokenListedInDex()">Check Listing</button>
+    <div class="row mt-2 mb-2" *ngFor="let pair of pairs">
+      <div class="mr-2 eth-pair">{{pair.name}} </div>
+      <div class="mr-2 eth-pair">{{pair.address}}</div>
+
+    </div>
+  </div>
+  <div class="row mt-2 mb-2">
+    <input class="form-control input-width mr-2" [(ngModel)]="buyLimit_ethInput_amount" placeholder="Amount">
+    <input class="form-control input-width mr-2" [(ngModel)]="buyLimit_ethInput_price" placeholder="Price">
+    <button type="button" class="btn btn-dark mr-2" (click)="buyLimit()">Buy limit</button>
+  </div>
+  <div class="row mt-2 mb-2"><button type="button" class="btn btn-dark mr-2" (click)="getBuyOrderBook()">Get Buy Order
+      Book</button>
+  </div>
 </div>
-<div class="row">
-  <input [(ngModel)]="buyLimit_ethInput_amount" placeholder="Amount">
-  <input [(ngModel)]="buyLimit_ethInput_price" placeholder="Price">
-  <button (click)="buyLimit()">Buy limit</button>
-</div>
-<div class="row"><button (click)="getBuyOrderBook()">Get Buy Order Book</button></div>
